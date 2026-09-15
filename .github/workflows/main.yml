@@ -1,0 +1,50 @@
+name: Maximum PDF Compression
+
+on:
+  workflow_dispatch:
+
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ghostscript
+        run: sudo apt-get update && sudo apt-get install -y ghostscript
+
+      - name: Compress PDFs
+        run: |
+          mkdir -p compressed
+
+          for file in *.pdf; do
+            [ -f "$file" ] || continue
+
+            gs \
+              -sDEVICE=pdfwrite \
+              -dCompatibilityLevel=1.4 \
+              -dPDFSETTINGS=/screen \
+              -dDownsampleColorImages=true \
+              -dDownsampleGrayImages=true \
+              -dDownsampleMonoImages=true \
+              -dColorImageResolution=50 \
+              -dGrayImageResolution=50 \
+              -dMonoImageResolution=100 \
+              -dColorImageDownsampleType=/Bicubic \
+              -dGrayImageDownsampleType=/Bicubic \
+              -dJPEGQ=25 \
+              -dDetectDuplicateImages=true \
+              -dCompressFonts=true \
+              -dSubsetFonts=true \
+              -dNOPAUSE \
+              -dQUIET \
+              -dBATCH \
+              -sOutputFile="compressed/$(basename "$file" .pdf)-compressed.pdf" \
+              "$file"
+          done
+
+      - name: Upload compressed PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: compressed-pdfs
+          path: compressed/ 
